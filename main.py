@@ -1,8 +1,10 @@
+from ops_instrumentation import attach_ops
 from fastapi import FastAPI
 from datetime import datetime
 from utils import generate_forecast
 
 app = FastAPI()
+attach_ops(app)
 
 @app.get("/forecast")
 async def forecast():

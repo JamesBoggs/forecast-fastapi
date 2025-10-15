@@ -2,3 +2,5 @@ fastapi
 uvicorn
 torch
 numpy
+prometheus_client
+pydantic
