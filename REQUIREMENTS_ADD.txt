@@ -1,6 +1,0 @@
-# fastapi
-# uvicorn[standard]
-# torch
-# slowapi
-# anyio
-# onnx  # optional for export
