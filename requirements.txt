@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 torch
-requests
-celery
-redis
 numpy
+pandas
+fredapi
+pydantic
