@@ -12,7 +12,7 @@ from fredapi import Fred
 import os, datetime, math
 
 # === Setup ===
-app = FastAPI(title="Forecast GRU", version="2.0.0")
+app = FastAPI(title="Forecast GRU", version="2.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,18 +23,25 @@ app.add_middleware(
 )
 
 # === Model + FRED Setup ===
-MODEL_PATH = "models/forecast.pt"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "models", "forecast.pt")
+
 FRED_API_KEY = os.getenv("FRED_API_KEY", "")
 fred = Fred(api_key=FRED_API_KEY)
 
-# Load the GRU model
+# --- Model loading ---
 try:
     model = torch.load(MODEL_PATH, map_location="cpu")
-    model.eval()
+    if hasattr(model, "eval"):
+        model.eval()
+        print(f"[INFO] Forecast model loaded from {MODEL_PATH}")
+    else:
+        raise ValueError("Loaded object is not a PyTorch model instance.")
 except Exception as e:
-    raise RuntimeError(f"[ERROR] Could not load forecast.pt: {e}")
+    print(f"[WARN] Could not load forecast.pt: {e}")
+    model = None  # allow app to run even if model is missing
 
-# --- Utility ---
+# --- Utility functions ---
 def fetch_fred_series(series_id: str, start="2010-01-01") -> pd.Series:
     """Fetch a FRED time series and return as a pandas Series."""
     data = fred.get_series(series_id)
@@ -52,6 +59,8 @@ def preprocess(series: pd.Series, seq_len: int = 12):
 
 def predict_forecast(series_id: str, seq_len: int = 12, steps_ahead: int = 3):
     """Run forecast for given FRED series."""
+    if model is None:
+        raise RuntimeError("Forecast model not loaded.")
     series = fetch_fred_series(series_id)
     x = preprocess(series, seq_len)
     with torch.no_grad():
@@ -81,8 +90,8 @@ def meta():
     return {
         "name": "Forecast GRU",
         "description": "Forecasts headline CPI, core CPI, and inflation rates using FRED data + PyTorch GRU.",
-        "isOnline": True,
-        "version": "2.0.0"
+        "isOnline": True if model is not None else False,
+        "version": "2.1.0"
     }
 
 @app.get("/forecast")
@@ -122,9 +131,6 @@ def run_forecast(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-# === Example run ===
+# === Example ===
+# https://forecast-fastapi.onrender.com/meta
 # https://forecast-fastapi.onrender.com/forecast?mode=headline
-# https://forecast-fastapi.onrender.com/forecast?mode=core
-# https://forecast-fastapi.onrender.com/forecast?mode=mom
-# https://forecast-fastapi.onrender.com/forecast?mode=yoy
