@@ -25,7 +25,7 @@ app.add_middleware(
 # === Model + FRED Setup ===
 MODEL_PATH = "models/forecast.pt"
 FRED_API_KEY = os.getenv("FRED_API_KEY", "")
-fred = Fred(api_key= 0f4e6f6b0a0158deaba656681dcbb4c6)
+fred = Fred(api_key=FRED_API_KEY)
 
 # Load the GRU model
 try:
